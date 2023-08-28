@@ -1,19 +1,18 @@
 package guru.qa.niffler.jupiter;
 
+import com.github.jknack.handlebars.internal.lang3.tuple.Pair;
 import guru.qa.niffler.model.UserJson;
 import io.qameta.allure.AllureId;
-import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ParameterContext;
-import org.junit.jupiter.api.extension.ParameterResolutionException;
-import org.junit.jupiter.api.extension.ParameterResolver;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.*;
 
+import java.lang.reflect.Executable;
+import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeoutException;
 
 public class UserQueueExtension implements BeforeEachCallback, AfterTestExecutionCallback, ParameterResolver {
 
@@ -25,6 +24,8 @@ public class UserQueueExtension implements BeforeEachCallback, AfterTestExecutio
         Queue<UserJson> usersWithFriends = new ConcurrentLinkedQueue<>();
         usersWithFriends.add(bindUser("dima", "12345"));
         usersWithFriends.add(bindUser("barsik", "12345"));
+        usersWithFriends.add(bindUser("bob", "12345"));
+        usersWithFriends.add(bindUser("jas", "12345"));
         usersQueue.put(User.UserType.WITH_FRIENDS, usersWithFriends);
         Queue<UserJson> usersInSent = new ConcurrentLinkedQueue<>();
         usersInSent.add(bindUser("bee", "12345"));
@@ -37,22 +38,40 @@ public class UserQueueExtension implements BeforeEachCallback, AfterTestExecutio
     }
 
     @Override
-    public void beforeEach(ExtensionContext context) throws Exception {
-        Parameter[] parameters = context.getRequiredTestMethod().getParameters();
-        for (Parameter parameter : parameters) {
-            if (parameter.getType().isAssignableFrom(UserJson.class)) {
-                User parameterAnnotation = parameter.getAnnotation(User.class);
-                User.UserType userType = parameterAnnotation.userType();
-                Queue<UserJson> usersQueueByType = usersQueue.get(parameterAnnotation.userType());
-                UserJson candidateForTest = null;
-                while (candidateForTest == null) {
-                    candidateForTest = usersQueueByType.poll();
-                }
-                candidateForTest.setUserType(userType);
-                context.getStore(NAMESPACE).put(getAllureId(context), candidateForTest);
-                break;
+    public void beforeEach(ExtensionContext context) throws TimeoutException {
+        List<Method> handlerMethods = new ArrayList<>();
+        handlerMethods.add(context.getRequiredTestMethod());
+        Arrays.stream(context.getRequiredTestClass().getDeclaredMethods())
+                .filter(m -> m.isAnnotationPresent(BeforeEach.class))
+                .forEach(handlerMethods::add);
+
+        List<Parameter> handlerParameters = handlerMethods.stream()
+                .map(Executable::getParameters)
+                .flatMap(Arrays::stream)
+                .filter(p -> p.getType().isAssignableFrom(UserJson.class))
+                .filter(p -> p.isAnnotationPresent(User.class))
+                .toList();
+
+        Map<Pair<User.UserType, String>, UserJson> candidatesForTest = new ConcurrentHashMap<>();
+
+        for (Parameter parameter : handlerParameters) {
+            User parameterAnnotation = parameter.getAnnotation(User.class);
+            User.UserType userType = parameterAnnotation.userType();
+            Queue<UserJson> usersQueueByType = usersQueue.get(userType);
+            UserJson candidateForTest = null;
+
+            long start = System.currentTimeMillis();
+            long end = start + 30 * 1000;
+            while (System.currentTimeMillis() < end && candidateForTest == null) {
+                candidateForTest = usersQueueByType.poll();
             }
+            if (candidateForTest == null) {
+                throw new TimeoutException();
+            }
+            candidateForTest.setUserType(userType);
+            context.getStore(NAMESPACE).put(getAllureId(context), candidateForTest);
         }
+
     }
 
     @Override
