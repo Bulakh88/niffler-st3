@@ -68,16 +68,18 @@ public class UserQueueExtension implements BeforeEachCallback, AfterTestExecutio
             if (candidateForTest == null) {
                 throw new TimeoutException();
             }
-            candidateForTest.setUserType(userType);
-            context.getStore(NAMESPACE).put(getAllureId(context), candidateForTest);
+            candidatesForTest.put(Pair.of(userType, parameter.getName()), candidateForTest);
+            context.getStore(NAMESPACE).put(getAllureId(context), candidatesForTest);
         }
 
     }
 
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
-        UserJson userFromTest = context.getStore(NAMESPACE).get(getAllureId(context), UserJson.class);
-        usersQueue.get(userFromTest.getUserType()).add(userFromTest);
+        Map<Pair<User.UserType, String>, UserJson> usersFromTest = context.getStore(NAMESPACE).get(getAllureId(context), Map.class);
+        for (Pair<User.UserType, String> userType : usersFromTest.keySet()) {
+            usersQueue.get(userType.getLeft()).add(usersFromTest.get(userType));
+        }
     }
 
     @Override
@@ -88,7 +90,9 @@ public class UserQueueExtension implements BeforeEachCallback, AfterTestExecutio
 
     @Override
     public UserJson resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
-        return extensionContext.getStore(NAMESPACE).get(getAllureId(extensionContext), UserJson.class);
+        User.UserType userType = parameterContext.getParameter().getAnnotation(User.class).userType();
+        Pair<User.UserType, String> key = Pair.of(userType, parameterContext.getParameter().getName());
+        return (UserJson) extensionContext.getStore(NAMESPACE).get(getAllureId(extensionContext), Map.class).get(key);
     }
 
     private String getAllureId(ExtensionContext context) {

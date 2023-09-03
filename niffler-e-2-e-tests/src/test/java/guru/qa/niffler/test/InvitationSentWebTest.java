@@ -10,8 +10,10 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
+import static guru.qa.niffler.jupiter.User.UserType.INVITATION_RECEIVED;
 import static guru.qa.niffler.jupiter.User.UserType.INVITATION_SENT;
 import static io.qameta.allure.Allure.step;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class InvitationSentWebTest extends BaseWebTest {
 
@@ -56,5 +58,12 @@ public class InvitationSentWebTest extends BaseWebTest {
                         .$$("td")
                         .filterBy(text("Pending invitation"))
                         .shouldHave(size(1)));
+    }
+
+    @Test
+    @AllureId("108")
+    void testWithSameParameters(@User(userType = INVITATION_SENT) UserJson firstUser,
+                                @User(userType = INVITATION_RECEIVED) UserJson secondUser) {
+        assertNotEquals(firstUser.getUsername(), secondUser.getUsername());
     }
 }
