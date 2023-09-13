@@ -69,9 +69,8 @@ public class UserQueueExtension implements BeforeEachCallback, AfterTestExecutio
                 throw new TimeoutException();
             }
             candidatesForTest.put(Pair.of(userType, parameter.getName()), candidateForTest);
-            context.getStore(NAMESPACE).put(getAllureId(context), candidatesForTest);
         }
-
+        context.getStore(NAMESPACE).put(getAllureId(context), candidatesForTest);
     }
 
     @Override
