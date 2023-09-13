@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@ExtendWith(CreateUserExtension.class)
+@ExtendWith(CreateUserDBExtension.class)
 public @interface DBUser {
 
     String username();
