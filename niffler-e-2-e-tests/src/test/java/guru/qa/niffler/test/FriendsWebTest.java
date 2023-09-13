@@ -8,8 +8,12 @@ import io.qameta.allure.AllureId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static guru.qa.niffler.jupiter.User.UserType.WITH_FRIENDS;
+import static io.qameta.allure.Allure.step;
 
 public class FriendsWebTest extends BaseWebTest {
 
@@ -24,19 +28,40 @@ public class FriendsWebTest extends BaseWebTest {
 
     @Test
     @AllureId("101")
-    void friendShouldBeDisplayedInTable0(@User(userType = WITH_FRIENDS) UserJson userForTest) throws InterruptedException {
-        Thread.sleep(3000);
+    void friendShouldBeDisplayedInTable0(@User(userType = WITH_FRIENDS) UserJson userForTest) {
+        step("Открыть страницу \"All people\"", () ->
+                $("[data-tooltip-id='people']").click());
+
+        step("Количество строк со статусом \"You are friends\" должно равняться 1", () ->
+                $$("tr")
+                        .filter(text("You are friends"))
+                        .shouldHave(sizeGreaterThan(0))
+        );
     }
 
     @Test
     @AllureId("102")
-    void friendShouldBeDisplayedInTable1(@User(userType = WITH_FRIENDS) UserJson userForTest) throws InterruptedException {
-        Thread.sleep(3000);
+    void friendShouldBeDisplayedInTable1(@User(userType = WITH_FRIENDS) UserJson userForTest) {
+        step("Открыть страницу \"All people\"", () ->
+                $("[data-tooltip-id='people']").click());
+
+        step("Количество строк со статусом \"You are friends\" должно равняться 1", () ->
+                $$("tr")
+                        .filter(text("You are friends"))
+                        .shouldHave(sizeGreaterThan(0))
+        );
     }
 
     @Test
     @AllureId("103")
-    void friendShouldBeDisplayedInTable2(@User(userType = WITH_FRIENDS) UserJson userForTest) throws InterruptedException {
-        Thread.sleep(3000);
+    void friendShouldBeDisplayedInTable2(@User(userType = WITH_FRIENDS) UserJson userForTest) {
+        step("Открыть страницу \"All people\"", () ->
+                $("[data-tooltip-id='people']").click());
+
+        step("Количество строк со статусом \"You are friends\" должно равняться 1", () ->
+                $$("tr")
+                        .filter(text("You are friends"))
+                        .shouldHave(sizeGreaterThan(0))
+        );
     }
 }
